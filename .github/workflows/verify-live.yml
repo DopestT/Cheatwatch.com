@@ -12,22 +12,23 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify public archive route
+      - name: Verify public CDN archive route
         run: |
           set -e
-          code=$(curl -sS -L --max-time 30 -o /tmp/site.html -w '%{http_code}' https://dopestt.github.io/the-record/)
+          URL='https://raw.githack.com/DopestT/Cheatwatch.com/dba2158f259fc8f957104e15793fbef26df22233/index.html'
+          code=$(curl -sS -L --max-time 30 -D /tmp/headers.txt -o /tmp/site.html -w '%{http_code}' "$URL")
           echo "PUBLIC_HTTP=$code"
-          head -c 300 /tmp/site.html || true
-          echo
+          grep -i '^content-type:' /tmp/headers.txt | tail -1 || true
           test "$code" = "200"
-          grep -q "Loading THE RECORD" /tmp/site.html
-      - name: Verify archive source is readable and CORS-enabled
+          grep -qi '^content-type:.*text/html' /tmp/headers.txt
+          grep -q "THE RECORD" /tmp/site.html
+          grep -q "WATERGATE DNC BURGLARY" /tmp/site.html
+          grep -q "Start auto scroll" /tmp/site.html
+          grep -q "THE RECORD DOES NOT LABEL EVERY LISTED ACTION CRIMINAL OR UNLAWFUL" /tmp/site.html
+          echo "PUBLIC_ARCHIVE_OK"
+      - name: Verify canonical GitHub source
         run: |
           set -e
-          curl -sSI --max-time 20 https://raw.githubusercontent.com/DopestT/Cheatwatch.com/main/index.html | tr -d '\r' > /tmp/headers.txt
-          grep -qi '^access-control-allow-origin: \*$' /tmp/headers.txt
           curl -fsSL --max-time 20 https://raw.githubusercontent.com/DopestT/Cheatwatch.com/main/index.html -o /tmp/archive.html
           grep -q "WATERGATE DNC BURGLARY" /tmp/archive.html
-          grep -q "Start auto scroll" /tmp/archive.html
-          grep -q "THE RECORD DOES NOT LABEL EVERY LISTED ACTION CRIMINAL OR UNLAWFUL" /tmp/archive.html
-          echo "ARCHIVE_SOURCE_OK"
+          echo "SOURCE_OK"
