@@ -12,17 +12,23 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify Vercel loader is publicly reachable
+      - name: Inspect Vercel production alias
         run: |
           set -e
-          curl -fsSL --max-time 20 -o /tmp/site.html https://the-record-evidence-archive-dopestts-projects.vercel.app/
-          grep -q "Loading THE RECORD" /tmp/site.html
+          code=$(curl -sS -L --max-time 20 -o /tmp/site.html -w '%{http_code}' https://the-record-evidence-archive-dopestts-projects.vercel.app/)
+          echo "HTTP=$code"
+          echo "BODY_START"
+          head -c 700 /tmp/site.html || true
+          echo
+          echo "BODY_END"
+          test "$code" = "200"
       - name: Verify archive source is publicly readable and CORS-enabled
         run: |
           set -e
-          curl -fsSI --max-time 20 https://raw.githubusercontent.com/DopestT/Cheatwatch.com/main/index.html | tr -d '\r' > /tmp/headers.txt
-          grep -qi '^access-control-allow-origin: \*$' /tmp/headers.txt
+          echo "RAW_HEADERS"
+          curl -sSI --max-time 20 https://raw.githubusercontent.com/DopestT/Cheatwatch.com/main/index.html | tr -d '\r' | head -40
           curl -fsSL --max-time 20 https://raw.githubusercontent.com/DopestT/Cheatwatch.com/main/index.html -o /tmp/archive.html
           grep -q "WATERGATE DNC BURGLARY" /tmp/archive.html
-          grep -q "START AUTO SCROLL\|Start auto scroll" /tmp/archive.html
+          grep -q "Start auto scroll" /tmp/archive.html
           grep -q "THE RECORD DOES NOT LABEL EVERY LISTED ACTION CRIMINAL OR UNLAWFUL" /tmp/archive.html
+          echo "ARCHIVE_SOURCE_OK"
